@@ -1,0 +1,35 @@
+version: "3.7"
+
+services:
+  nginx:
+    build:
+      context: ./nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - "./nginx-logs/:/var/log/nginx"
+
+  clickhouse:
+    image: clickhouse/clickhouse-server
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - "./clickhouse/logs/clickhouse:/var/log/clickhouse-server"
+      - "./clickhouse/data/clickhouse:/var/lib/clickhouse"
+    environment:
+      - CLICKHOUSE_DB=vector
+      - CLICKHOUSE_USER=vector
+      - CLICKHOUSE_PASSWORD=vector
+      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
+
+  vector:
+    image: timberio/vector:0.21.2-debian
+    ports:
+      - 8383:8383
+    volumes:
+      - "./nginx-logs/logs:/var/log/nginx:ro"
+      - "./vector/vector.toml:/etc/vector/vector.toml:ro"
+    environment:
+      - VECTOR_LOG=info
