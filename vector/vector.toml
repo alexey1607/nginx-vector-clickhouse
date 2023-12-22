@@ -87,7 +87,7 @@
 
   host = "http://clickhouse:8123"
   database = "vector"
-  table = "nginx_1"
+  table = "nginx"
   auth.strategy = "basic"
   auth.user = "vector"
   auth.password = "vector"
