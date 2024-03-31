@@ -65,7 +65,8 @@ services:
       start_period: 10s
 
   vector:
-    image: timberio/vector:0.21.2-debian
+    # image: timberio/vector:0.21.2-debian
+    image: timberio/vector:0.37.0-debian
     container_name: vector
     hostname: vector
     ports:
@@ -73,15 +74,15 @@ services:
       - "8686:8686"
     volumes:
       - "./nginx/logs:/var/log/nginx:ro"
-      - "./vector/vector.toml:/etc/vector/vector.toml:ro"
+      - "./vector/vector.yaml:/etc/vector/vector.yaml:ro"
     environment:
       - VECTOR_LOG=info
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8686/health"]
-      interval: 10s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+    # healthcheck:
+    #   test: ["CMD", "wget", "--spider", "-q", "http://localhost:8686/health"]
+    #   interval: 10s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 10s
     depends_on:
       - clickhouse
   
