@@ -13,7 +13,7 @@ CREATE TABLE vector.`nginx`
     scheme Nullable(String),
     server_protocol Nullable(String),
     ssl_protocol Nullable(String),
-    timestamp datetime,
+    timestamp DateTime,
 
     INDEX idx_http_host http_host TYPE set(0) GRANULARITY 1
 )

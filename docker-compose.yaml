@@ -41,7 +41,7 @@ services:
       - clickhouse
 
   clickhouse:
-    image: clickhouse/clickhouse-server
+    image: clickhouse/clickhouse-server:24.3.1
     container_name: clickhouse
     hostname: clickhouse
     user: "101:101"
@@ -65,7 +65,6 @@ services:
       start_period: 10s
 
   vector:
-    # image: timberio/vector:0.21.2-debian
     image: timberio/vector:0.37.0-debian
     container_name: vector
     hostname: vector
@@ -77,17 +76,46 @@ services:
       - "./vector/vector.yaml:/etc/vector/vector.yaml:ro"
     environment:
       - VECTOR_LOG=info
-    # healthcheck:
-    #   test: ["CMD", "wget", "--spider", "-q", "http://localhost:8686/health"]
-    #   interval: 10s
-    #   timeout: 10s
-    #   retries: 3
-    #   start_period: 10s
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8686/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     depends_on:
       - clickhouse
-  
-  # ubuntu:
-  #   image: ubuntu
-  #   container_name: ubuntu
-  #   hostname: ubuntu
-  #   command: bash -c "while true; do echo hello; sleep 100000; done"
+      - elasticsearch
+
+  elasticsearch:
+    image: elasticsearch:8.13.0
+    container_name: elasticsearch
+    hostname: elasticsearch
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  kibana:
+    image: kibana:8.13.0
+    container_name: kibana
+    hostname: kibana
+    ports:
+      - 5601:5601
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5601"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

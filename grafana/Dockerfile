@@ -1,4 +1,4 @@
-FROM grafana/grafana-enterprise:latest
+FROM grafana/grafana:10.1.9-ubuntu
 
 ENV GF_SECURITY_ADMIN_PASSWORD=admin
 ENV GF_SECURITY_ALLOW_EMBEDDING=true

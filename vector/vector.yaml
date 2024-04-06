@@ -1,3 +1,7 @@
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
 sources:
   nginx_logs:
     type: file
@@ -47,9 +51,12 @@ sinks:
     healthcheck: true
     compression: gzip
     format: json_each_row
-
-
-    
-
-
-
+  elasticsearch:
+    type: elasticsearch
+    inputs:
+      - nginx_transforms
+    api_version: auto
+    compression: none
+    doc_type: _doc
+    endpoint: http://elasticsearch:9200
+    id_key: id
