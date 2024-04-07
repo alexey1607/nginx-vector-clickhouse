@@ -119,3 +119,17 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+
+  alpine:
+    image: alpine:latest
+    container_name: alpine
+    hostname: alpine
+    command: 
+      - /bin/sh
+      - -c
+      - |
+        apk add curl
+        while true; 
+        do sleep 1; 
+        curl http://www.google.com;
+        done

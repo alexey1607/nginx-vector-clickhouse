@@ -10,3 +10,11 @@ datasources:
       tlsSkipVerify: false
     secureJsonData:
       password: vector
+
+  - name: ElasticSearch
+    type: elasticsearch
+    access: proxy
+    url: http://elasticsearch:9200
+    jsonData:
+      index: 'vector-*'
+      timeField: '@timestamp'
