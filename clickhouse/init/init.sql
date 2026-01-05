@@ -1,32 +1,27 @@
-CREATE TABLE nginx (
-    ts DateTime,                               -- nginx_time (ISO8601)
-    connection UInt64,
-    connection_requests UInt32,
+CREATE DATABASE IF NOT EXISTS vector;
 
-    remote_addr IPv6,
-    remote_port UInt16,
-
-    request_id String,
-    request_method LowCardinality(String),
-    request_uri String,
-    request_length UInt32,
-    request_time Float32,
-
-    server_protocol LowCardinality(String),
-
-    nginx_host LowCardinality(String),
-    http_host LowCardinality(String),
-    scheme LowCardinality(String),
-
-    status UInt16,
-    body_bytes_sent UInt64,
-    bytes_sent UInt64,
-
-    http_user_agent String,
-
-    ssl_protocol LowCardinality(String),
-    gzip_ratio Float32
+CREATE TABLE IF NOT EXISTS vector.nginx
+(
+    timestamp           DateTime('UTC') DEFAULT now(),
+    body_bytes_sent     UInt64 DEFAULT 0,
+    bytes_sent          UInt64 DEFAULT 0,
+    connection          UInt64 DEFAULT 0,
+    connection_requests UInt64,
+    gzip_ratio          Float32,
+    http_host           String,
+    http_user_agent     String,
+    nginx_host          String,
+    nginx_status        UInt64,
+    remote_addr         String,
+    request_id          String,
+    request_length      UInt64,
+    request_method      LowCardinality(String),
+    request_time        Float32,
+    request_uri         String,
+    scheme              LowCardinality(String),
+    server_protocol     LowCardinality(String),
+    ssl_protocol        LowCardinality(String)
 )
-ENGINE = MergeTree
-PARTITION BY toDate(ts)
-ORDER BY (ts, status, request_method);
+    ENGINE MergeTree
+    PARTITION BY toDate(timestamp)
+    order by (timestamp, nginx_status,request_method);
