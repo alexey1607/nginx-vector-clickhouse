@@ -13,7 +13,7 @@ transforms:
     type: remap
     inputs:
       - nginx_logs
-    source: |
+    source: |-
       . = parse_json!(.message)
 
       del(.remote_port)
@@ -28,13 +28,14 @@ transforms:
          .ssl_protocol = "no_ssl"
       }
 
+
 sinks:
-  # print:
-  #   type: console
-  #   inputs:
-  #     - nginx_transforms
-  #   encoding:
-  #     codec: json
+  print:
+    type: console
+    inputs:
+      - nginx_transforms
+    encoding:
+      codec: json
   clickhouse:
     type: clickhouse
     inputs:
@@ -46,31 +47,16 @@ sinks:
       strategy: basic
       user: vector
       password: vector
-    format: json_each_row
     skip_unknown_fields: true
-    compression: gzip
     healthcheck: true
-    batch:
-      max_events: 10000
-      timeout_secs: 5
-    request:
-      timeout_secs: 10
-      retry_attempts: 10
-      retry_backoff_secs: 5
+    compression: gzip
+    format: json_each_row
   elasticsearch:
     type: elasticsearch
+    endpoint: http://elasticsearch:9200
     inputs:
       - nginx_transforms
-    endpoints:
-      - http://elasticsearch:9200
     api_version: auto
-    compression: gzip
-    bulk:
-      action: index
-    batch:
-      max_events: 5000
-      timeout_secs: 5
-    request:
-      timeout_secs: 10
-      retry_attempts: 10
-      retry_backoff_secs: 5
+    compression: none
+    doc_type: _doc
+    id_key: id

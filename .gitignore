@@ -1,5 +1,4 @@
 
 clickhouse/data/*
 clickhouse/logs/*
-
 nginx/logs/*

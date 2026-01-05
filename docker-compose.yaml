@@ -1,47 +1,8 @@
-version: "3.7"
-
+---
 services:
-  nginx:
-    container_name: nginx
-    hostname: nginx
-    build:
-      context: ./nginx
-    restart: always
-    ports:
-      - "80:80"
-    volumes:
-      - "./nginx/logs/:/var/log/nginx"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost"]
-      interval: 10s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    depends_on:
-      - clickhouse
-      - vector
-
-  grafana:
-    container_name: grafana
-    hostname: grafana
-    build: 
-      context: ./grafana
-      dockerfile: Dockerfile
-    volumes:
-      - "./grafana/clickhouse.yaml:/etc/grafana/provisioning/datasources/clickhouse.yaml"
-    ports:
-      - "3000:3000"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
-      interval: 10s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    depends_on:
-      - clickhouse
 
   clickhouse:
-    image: clickhouse/clickhouse-server:24.3.1
+    image: clickhouse/clickhouse-server:25.8.13
     container_name: clickhouse
     hostname: clickhouse
     user: "101:101"
@@ -49,8 +10,8 @@ services:
       - "8123:8123"
       - "9000:9000"
     volumes:
-      - "./clickhouse/logs/clickhouse:/var/log/clickhouse-server"
-      - "./clickhouse/data/clickhouse:/var/lib/clickhouse"
+      - "clickhouse_logs:/var/log/clickhouse-server"
+      - "clickhouse_data:/var/lib/clickhouse"
       - "./clickhouse/init:/docker-entrypoint-initdb.d"
     environment:
       - CLICKHOUSE_DB=vector
@@ -63,31 +24,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-
-  vector:
-    image: timberio/vector:0.37.0-debian
-    container_name: vector
-    hostname: vector
-    ports:
-      - "8383:8383"
-      - "8686:8686"
-    volumes:
-      - "./nginx/logs:/var/log/nginx:ro"
-      - "./vector/vector.yaml:/etc/vector/vector.yaml:ro"
-    environment:
-      - VECTOR_LOG=info
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8686/health"]
-      interval: 10s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    depends_on:
-      - clickhouse
-      - elasticsearch
+    networks:
+      - logs
 
   elasticsearch:
-    image: elasticsearch:8.13.0
+    image: elasticsearch:9.2.3
     container_name: elasticsearch
     hostname: elasticsearch
     ports:
@@ -102,23 +43,108 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    networks:
+      - logs
 
   kibana:
-    image: kibana:8.13.0
+    image: kibana:9.2.3
     container_name: kibana
     hostname: kibana
     ports:
       - 5601:5601
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-    depends_on:
-      - elasticsearch
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5601"]
       interval: 10s
       timeout: 10s
       retries: 3
       start_period: 10s
+    networks:
+      - logs
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  vector:
+    image: timberio/vector:0.52.0-alpine
+    container_name: vector
+    hostname: vector
+    ports:
+      - "8383:8383"
+      - "8686:8686"
+    volumes:
+      - "./nginx/logs:/var/log/nginx:ro"
+      - "./vector/vector.yaml:/etc/vector/vector.yaml:ro"
+    environment:
+      - VECTOR_LOG=info
+    healthcheck:
+      test: ["CMD", "vector", "validate", "/etc/vector/vector.yaml"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - logs
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+
+  nginx:
+    container_name: nginx
+    hostname: nginx
+    build:
+      context: ./nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - "./nginx/logs/:/var/log/nginx"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - logs
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      vector:
+        condition: service_healthy
+
+  grafana:
+    image: grafana/grafana:12.4.0-20648027705-ubuntu
+    container_name: grafana
+    hostname: grafana
+    volumes:
+      - "./grafana/clickhouse.yaml:/etc/grafana/provisioning/datasources/clickhouse.yaml"
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_INSTALL_PLUGINS=grafana-clickhouse-datasource
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - logs
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
 
   alpine:
     image: alpine:latest
@@ -133,3 +159,15 @@ services:
         do sleep 1; 
         curl http://www.google.com;
         done
+    networks:
+      - logs
+
+networks:
+  logs:
+    driver: bridge
+
+volumes:
+  clickhouse_data:
+    driver: local
+  clickhouse_logs:
+    driver: local

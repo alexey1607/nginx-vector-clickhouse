@@ -1,24 +1,32 @@
-CREATE TABLE vector.`nginx`
-(
+CREATE TABLE nginx (
+    ts DateTime,                               -- nginx_time (ISO8601)
+    connection UInt64,
+    connection_requests UInt32,
 
-    bytes_sent Nullable(UInt64),
-    gzip_ratio Nullable(Float32),
-    http_host Nullable(String),
-    http_user_agent Nullable(String),
-    remote_addr Nullable(IPv4),
-    request_length Nullable(UInt64),
-    request_method Nullable(String),
-    request_time Nullable(Float32),
-    request_uri Nullable(String),
-    scheme Nullable(String),
-    server_protocol Nullable(String),
-    ssl_protocol Nullable(String),
-    timestamp DateTime,
+    remote_addr IPv6,
+    remote_port UInt16,
 
-    INDEX idx_http_host http_host TYPE set(0) GRANULARITY 1
+    request_id String,
+    request_method LowCardinality(String),
+    request_uri String,
+    request_length UInt32,
+    request_time Float32,
+
+    server_protocol LowCardinality(String),
+
+    nginx_host LowCardinality(String),
+    http_host LowCardinality(String),
+    scheme LowCardinality(String),
+
+    status UInt16,
+    body_bytes_sent UInt64,
+    bytes_sent UInt64,
+
+    http_user_agent String,
+
+    ssl_protocol LowCardinality(String),
+    gzip_ratio Float32
 )
 ENGINE = MergeTree
-PARTITION BY toYYYYMMDD(timestamp)
-ORDER BY timestamp
-TTL timestamp + toIntervalMonth(1)
-SETTINGS index_granularity = 8192
+PARTITION BY toDate(ts)
+ORDER BY (ts, status, request_method);
