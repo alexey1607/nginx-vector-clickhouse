@@ -37,6 +37,8 @@ services:
     environment:
       - xpack.security.enabled=false
       - discovery.type=single-node
+    volumes:
+      - "elasticsearch_data:/usr/share/elasticsearch/data"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9200"]
       interval: 10s
@@ -170,4 +172,6 @@ volumes:
   clickhouse_data:
     driver: local
   clickhouse_logs:
+    driver: local
+  elasticsearch_data:
     driver: local

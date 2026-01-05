@@ -57,20 +57,9 @@ sinks:
       timeout_secs: 10
       retry_attempts: 10
       retry_backoff_secs: 5
-  # elasticsearch:
-  #   type: elasticsearch
-  #   inputs:
-  #     - nginx_transforms
-  #   endpoints:
-  #     - http://elasticsearch:9200
-  #   api_version: auto
-  #   compression: gzip
-  #   bulk:
-  #     action: index
-  #   batch:
-  #     max_events: 5000
-  #     timeout_secs: 5
-  #   request:
-  #     timeout_secs: 10
-  #     retry_attempts: 10
-  #     retry_backoff_secs: 5
+  elasticsearch:
+    type: elasticsearch
+    inputs:
+      - nginx_transforms
+    endpoints:
+      - http://elasticsearch:9200
