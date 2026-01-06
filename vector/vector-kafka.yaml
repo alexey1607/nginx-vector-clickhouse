@@ -1,0 +1,49 @@
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  nginx_logs:
+    type: file
+    include:
+      - /var/log/nginx/access.log
+
+# transforms:
+#   nginx_transforms:
+#     type: remap
+#     inputs:
+#       - nginx_logs
+#     source: |
+#       . = parse_json!(.message)
+
+#       del(.remote_port)
+
+#       if .gzip_ratio == "-" || .gzip_ratio == "" {
+#          .gzip_ratio = "0.0"
+#       } else {
+#         .gzip_ration = to_float!(.gzip_ratio) 
+#       }
+
+#       if .ssl_protocol == "-" || .ssl_protocol == "" {
+#          .ssl_protocol = "no_ssl"
+#       }
+
+sinks:
+
+  kafka_topic:
+    type: kafka
+    inputs:
+      - nginx_logs
+    bootstrap_servers: "kafka:9092"
+    topic: "kafka_topic"
+    encoding:
+      codec: json
+  
+  # clickhouse_topic:
+  #   type: kafka
+  #   inputs:
+  #     - nginx_logs
+  #   bootstrap_servers: "kafka:9092"
+  #   topic: "clickhouse_topic"
+  #   encoding:
+  #     codec: json

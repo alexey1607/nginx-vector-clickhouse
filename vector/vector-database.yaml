@@ -1,0 +1,91 @@
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  kafka_topic:
+    type: kafka
+    bootstrap_servers: "kafka:9092"
+    group_id: "vector"
+    topics:
+      - "kafka_topic"
+    decoding:
+      codec: json
+
+transforms:
+  parse_message:
+    type: remap
+    inputs:
+      - kafka_topic
+    source: |
+      parsed = parse_json!(.message)
+      . = parsed
+
+  normalize_nginx:
+    type: remap
+    inputs:
+      - parse_message
+    source: |
+      # ---- integers ----
+      .body_bytes_sent     = to_int!(.body_bytes_sent)
+      .bytes_sent          = to_int!(.bytes_sent)
+      .connection          = to_int!(.connection)
+      .connection_requests = to_int!(.connection_requests)
+      .request_length      = to_int!(.request_length)
+      .nginx_status        = to_int!(.nginx_status)
+
+      # ---- floats ----
+      .request_time = to_float!(.request_time)
+
+      if .gzip_ratio == "-" {
+        .gzip_ratio = 0.0
+      } else {
+        .gzip_ratio = to_float!(.gzip_ratio)
+      }
+
+      # ---- ssl protocol ----
+      if .ssl_protocol == "-" {
+        .ssl_protocol = "no_ssl"
+      }
+
+      # ---- cleanup ----
+      del(.remote_port)
+
+sinks:
+
+  # print:
+  #   type: console
+  #   inputs:
+  #     - normalize_nginx
+  #   encoding:
+  #     codec: json
+
+  elasticsearch:
+    type: elasticsearch
+    inputs:
+      - normalize_nginx
+    endpoints:
+      - http://elasticsearch:9200
+
+  clickhouse:
+    type: clickhouse
+    inputs:
+      - normalize_nginx
+    endpoint: http://clickhouse:8123
+    database: vector
+    table: nginx
+    auth:
+      strategy: basic
+      user: vector
+      password: vector
+    format: json_each_row
+    skip_unknown_fields: true
+    compression: gzip
+    healthcheck: true
+    batch:
+      max_events: 10000
+      timeout_secs: 5
+    request:
+      timeout_secs: 10
+      retry_attempts: 10
+      retry_backoff_secs: 5

@@ -48,6 +48,77 @@ services:
     networks:
       - logs
 
+  zookeeper:
+    container_name: zookeeper
+    hostname: zookeeper
+    image: confluentinc/cp-zookeeper:7.5.0
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_4LW_COMMANDS_WHITELIST: "stat,ruok,srvr,conf"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 2181 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - logs
+
+  kafka:
+    container_name: kafka
+    hostname: kafka
+    image: confluentinc/cp-kafka:7.5.0
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - logs
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+
+  kafka-ui:
+    container_name: kafka-ui
+    hostname: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: "local-cluster"
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka:9092"
+      KAFKA_CLUSTERS_0_ZOOKEEPER: "zookeeper:2181"
+      KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: "PLAINTEXT"
+      KAFKA_CLUSTERS_0_READONLY: "false"
+      DYNAMIC_CONFIG_ENABLED: "true"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 20s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - logs
+    depends_on:
+      kafka:
+        condition: service_healthy
+
   kibana:
     image: kibana:9.2.3
     container_name: kibana
@@ -67,17 +138,17 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
-
-  vector:
+  
+  vector-kafka:
     image: timberio/vector:0.52.0-alpine
-    container_name: vector
-    hostname: vector
+    container_name: vector-kafka
+    hostname: vector-kafka
     ports:
       - "8383:8383"
       - "8686:8686"
     volumes:
       - "./nginx/logs:/var/log/nginx:ro"
-      - "./vector/vector.yaml:/etc/vector/vector.yaml:ro"
+      - "./vector/vector-kafka.yaml:/etc/vector/vector.yaml:ro"
     environment:
       - VECTOR_LOG=info
     healthcheck:
@@ -92,6 +163,35 @@ services:
       clickhouse:
         condition: service_healthy
       elasticsearch:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  vector-database:
+    image: timberio/vector:0.52.0-alpine
+    container_name: vector-database
+    hostname: vector-database
+    # ports:
+    #   - "8383:8383"
+    #   - "8686:8686"
+    volumes:
+      - "./vector/vector-database.yaml:/etc/vector/vector.yaml:ro"
+    environment:
+      - VECTOR_LOG=info
+    healthcheck:
+      test: ["CMD", "vector", "validate", "/etc/vector/vector.yaml"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - logs
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
 
   nginx:
@@ -117,7 +217,9 @@ services:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
-      vector:
+      vector-database:
+        condition: service_healthy
+      vector-kafka:
         condition: service_healthy
 
   grafana:
