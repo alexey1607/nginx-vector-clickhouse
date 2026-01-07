@@ -16,5 +16,5 @@ datasources:
     access: proxy
     url: http://elasticsearch:9200
     jsonData:
-      index: 'vector-*'
+      index: 'test'
       timeField: '@timestamp'

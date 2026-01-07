@@ -227,7 +227,7 @@ services:
     container_name: grafana
     hostname: grafana
     volumes:
-      - "./grafana/clickhouse.yaml:/etc/grafana/provisioning/datasources/clickhouse.yaml"
+      - "./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml"
     ports:
       - "3000:3000"
     environment:
