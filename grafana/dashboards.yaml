@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: 'vector'
+    orgId: 1
+    folder: 'vector'
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

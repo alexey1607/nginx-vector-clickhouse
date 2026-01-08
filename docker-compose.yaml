@@ -228,6 +228,8 @@ services:
     hostname: grafana
     volumes:
       - "./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml"
+      - "./grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml"
+      - "./grafana/vector.json:/var/lib/grafana/dashboards/vector.json"
     ports:
       - "3000:3000"
     environment:

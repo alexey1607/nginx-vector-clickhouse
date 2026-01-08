@@ -1,7 +1,39 @@
 
-# nginx-vectro-clickhouse
+# Sending Nginx json logs using Vector to Clickhouse
 
+┌─────────────────┐
+│   nginx         │
+│   access.log    │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Vector send log │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│      Kafka      │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│    Vector       │
+│ transforms logs │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│   ClickHouse    │
+│       and.      |
+|  ElasticSearch  │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│                 │
+│    Grafana      │
+│                 │
+└─────────────────┘
 
-Sending Nginx json logs using Vector to Clickhouse
+# Run lab
 
-run ```docker compose up -d --build```
+yaml```
+docker compose up -d --build
+```
+
