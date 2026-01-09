@@ -2,11 +2,14 @@
 # Sending Nginx json logs using Vector to Clickhouse
 
 ## Run lab
+
 ```
 docker compose up -d --build
 ```
 
 ## Architecture
+
+```
 [ NGINX ]
     |
     v
@@ -23,8 +26,10 @@ docker compose up -d --build
     |
     v
 [ Grafana ]
+```
 
 ## Structure
+
 ```
 .
 ├── clickhouse
@@ -50,6 +55,7 @@ docker compose up -d --build
 ```
 
 ## Generate traffic
+
 ```
 python3.12 traffic_generate.py \
   -n 100000 \
@@ -58,6 +64,7 @@ python3.12 traffic_generate.py \
 ```
 
 ## Clickhouse table
+
 ```
     timestamp           DateTime('UTC') DEFAULT now()
     body_bytes_sent     UInt64 DEFAULT 0
